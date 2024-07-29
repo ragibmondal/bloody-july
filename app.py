@@ -46,22 +46,27 @@ def main():
 
     if uploaded_file is not None:
         # Read the image
-        image = np.array(Image.open(uploaded_file))
+        image = np.array(Image.open(uploaded_file).convert('RGB'))
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         # Process the image
         processed_image = process_image(image)
+
+        # Convert back to RGB for displaying in Streamlit
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        processed_image = cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB)
 
         # Display original and processed images side by side
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Original Image")
-            st.image(image, channels="BGR")
+            st.image(image)
         with col2:
             st.subheader("Processed Image")
-            st.image(processed_image, channels="BGR")
+            st.image(processed_image)
 
         # Provide download option for the processed image
-        processed_pil_image = Image.fromarray(cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB))
+        processed_pil_image = Image.fromarray(processed_image)
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
             processed_pil_image.save(tmpfile.name)
             st.download_button(
