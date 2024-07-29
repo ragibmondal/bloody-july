@@ -31,18 +31,22 @@ def cover_eyes_and_mouth(image):
         eyes = eye_cascade.detectMultiScale(roi_gray)
         mouth = mouth_cascade.detectMultiScale(roi_gray, 1.3, 11)
         
-        # Cover eyes with a red rectangle
-        for (ex, ey, ew, eh) in eyes:
-            top_left = (x + ex, y + ey)
-            bottom_right = (x + ex + ew, y + ey + eh)
-            cv2.rectangle(image, top_left, bottom_right, (0, 0, 255), -1)
+        # Cover eyes with a single red rectangle
+        if len(eyes) >= 2:
+            eye_1 = eyes[0]
+            eye_2 = eyes[1]
+            ex1, ey1, ew1, eh1 = eye_1
+            ex2, ey2, ew2, eh2 = eye_2
+            top_left_eye = (x + min(ex1, ex2), y + min(ey1, ey2))
+            bottom_right_eye = (x + max(ex1 + ew1, ex2 + ew2), y + max(ey1 + eh1, ey2 + eh2))
+            cv2.rectangle(image, top_left_eye, bottom_right_eye, (0, 0, 255), -1)
         
         # Cover mouth with a red rectangle
         for (mx, my, mw, mh) in mouth:
             my = int(my - 0.15*mh)  # Adjust position to better cover the mouth
-            top_left = (x + mx, y + my)
-            bottom_right = (x + mx + mw, y + my + mh)
-            cv2.rectangle(image, top_left, bottom_right, (0, 0, 255), -1)
+            top_left_mouth = (x + mx, y + my)
+            bottom_right_mouth = (x + mx + mw, y + my + mh)
+            cv2.rectangle(image, top_left_mouth, bottom_right_mouth, (0, 0, 255), -1)
 
     return image
 
