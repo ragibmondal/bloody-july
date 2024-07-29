@@ -27,7 +27,7 @@ def add_red_cloth(image):
     
     for (x, y, w, h) in faces:
         # Define regions for eyes and mouth with reduced size
-        eye_region_height = int(h / 4)
+        eye_region_height = int(h / 5)
         mouth_region_height = int(h / 6)
         
         # Cover eyes
