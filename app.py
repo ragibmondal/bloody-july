@@ -39,7 +39,7 @@ def add_red_cloth(image):
         # Cover mouth
         mouth_y_start = y + int(2 * h / 3)
         mouth_y_end = mouth_y_start + mouth_region_height
-        mouth_x_start = x + int(w / 4)
+        mouth_x_start = x + int((w - mouth_region_width) / 2)
         mouth_x_end = mouth_x_start + mouth_region_width
         image[mouth_y_start:mouth_y_end, mouth_x_start:mouth_x_end] = [0, 0, 255]
     
