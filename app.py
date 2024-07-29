@@ -4,10 +4,18 @@ import numpy as np
 from PIL import Image
 import dlib
 import io
+import os
 
 # Load the face detector and landmark predictor
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+
+# Check if the shape predictor file exists
+predictor_path = "shape_predictor_68_face_landmarks.dat"
+if not os.path.exists(predictor_path):
+    st.error(f"Error: {predictor_path} not found. Please make sure the file is in the same directory as the script.")
+    st.stop()
+
+predictor = dlib.shape_predictor(predictor_path)
 
 def load_image(image_file):
     img = Image.open(image_file)
