@@ -40,33 +40,58 @@ def add_red_cloth(image):
     
     return image
 
+def add_text_background(image, text="BLOODY JULY"):
+    # Define text properties
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    bottom_left_corner_of_text = (10, image.shape[0] - 10)
+    font_scale = 3
+    font_color = (0, 0, 255)
+    line_type = 2
+    
+    # Add text to the image
+    cv2.putText(image, text, 
+                bottom_left_corner_of_text, 
+                font, 
+                font_scale, 
+                font_color, 
+                line_type)
+    
+    return image
+
 def process_image(image):
-    final_image = add_red_cloth(image)
+    image_with_cloth = add_red_cloth(image)
+    final_image = add_text_background(image_with_cloth)
     return final_image
 
 def main():
     st.title("Image Processing App")
-    st.write("Upload an image to add red cloth over eyes and mouth.")
+    st.write("Upload an image to add red cloth over eyes and mouth, and add 'BLOODY JULY' text.")
 
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
-        image = np.array(Image.open(uploaded_file).convert('RGB'))
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # Read the image
+        original_image = np.array(Image.open(uploaded_file).convert('RGB'))
+        image_for_processing = original_image.copy()
+        image_for_processing = cv2.cvtColor(image_for_processing, cv2.COLOR_RGB2BGR)
 
-        processed_image = process_image(image)
+        # Process the image
+        processed_image = process_image(image_for_processing)
 
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Convert back to RGB for displaying in Streamlit
+        original_image = cv2.cvtColor(original_image, cv2.COLOR_RGB2BGR)
         processed_image = cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB)
 
+        # Display original and processed images side by side
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Original Image")
-            st.image(image)
+            st.image(original_image, channels="BGR")
         with col2:
             st.subheader("Processed Image")
-            st.image(processed_image)
+            st.image(processed_image, channels="RGB")
 
+        # Provide download option for the processed image
         processed_pil_image = Image.fromarray(processed_image)
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
             processed_pil_image.save(tmpfile.name)
