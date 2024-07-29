@@ -7,12 +7,7 @@ import tempfile
 def enhance_image(image):
     # Convert to PIL Image
     pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    
-    # Enhance brightness and contrast
-    enhancer = ImageEnhance.Brightness(pil_image)
-    pil_image = enhancer.enhance(1.2)
-    enhancer = ImageEnhance.Contrast(pil_image)
-    pil_image = enhancer.enhance(1.2)
+
     
     # Convert back to OpenCV format
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
