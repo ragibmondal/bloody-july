@@ -25,22 +25,26 @@ def convert_image(image):
 
     # Loop through detected faces
     for (x, y, w, h) in faces:
-        # Draw rectangle around face
-        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
         # Detect eyes
         roi_gray = gray[y:y + h, x:x + w]
         roi_color = img[y:y + h, x:x + w]
         eyes = eye_cascade.detectMultiScale(roi_gray)
         for (ex, ey, ew, eh) in eyes:
             # Draw rectangle around eyes
-            cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 0, 255), -1)
+            cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 0, 255), 1)
 
         # Detect mouth
         mouth = mouth_cascade.detectMultiScale(roi_gray)
         for (mx, my, mw, mh) in mouth:
             # Draw rectangle around mouth
-            cv2.rectangle(roi_color, (mx, my), (mx + mw, my + mh), (0, 0, 255), -1)
+            cv2.rectangle(roi_color, (mx, my), (mx + mw, my + mh), (0, 0, 255), 1)
+
+        # Draw rectangle around face
+        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
+        # Cover eyes and mouth with red rectangle
+        cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 0, 255), -1)
+        cv2.rectangle(roi_color, (mx, my), (mx + mw, my + mh), (0, 0, 255), -1)
 
     # Return the converted image
     return cv2.imencode('.jpg', img)[1].tobytes()
