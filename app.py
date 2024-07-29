@@ -4,16 +4,24 @@ import numpy as np
 from PIL import Image
 import tempfile
 
+def load_face_cascade():
+    face_cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+    face_cascade = cv2.CascadeClassifier(face_cascade_path)
+    if face_cascade.empty():
+        st.error("Error loading Haar cascade file.")
+        return None
+    return face_cascade
+
 def add_red_cloth(image):
-    # Load the pre-trained face detector
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    face_cascade = load_face_cascade()
+    if face_cascade is None:
+        return image
     
-    # Detect faces
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     
     for (x, y, w, h) in faces:
-        # Define regions for eyes and mouth with original size
+        # Define regions for eyes and mouth
         eye_region_height = int(h / 4)
         mouth_region_height = int(h / 6)
         mouth_region_width = int(w * 0.5)
@@ -33,9 +41,7 @@ def add_red_cloth(image):
     return image
 
 def process_image(image):
-    # Add red cloth effect
     final_image = add_red_cloth(image)
-    
     return final_image
 
 def main():
@@ -45,18 +51,14 @@ def main():
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
-        # Read the image
         image = np.array(Image.open(uploaded_file).convert('RGB'))
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        # Process the image
         processed_image = process_image(image)
 
-        # Convert back to RGB for displaying in Streamlit
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         processed_image = cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB)
 
-        # Display original and processed images side by side
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Original Image")
@@ -65,7 +67,6 @@ def main():
             st.subheader("Processed Image")
             st.image(processed_image)
 
-        # Provide download option for the processed image
         processed_pil_image = Image.fromarray(processed_image)
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
             processed_pil_image.save(tmpfile.name)
