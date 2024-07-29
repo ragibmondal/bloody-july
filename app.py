@@ -2,38 +2,59 @@ import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
+import dlib
 import io
+
+# Load the face detector and landmark predictor
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
 def load_image(image_file):
     img = Image.open(image_file)
     return np.array(img)
 
-def cover_features(image, features, color=(0, 0, 255), alpha=0.5):
-    overlay = image.copy()
-    for (x, y, w, h) in features:
-        cv2.rectangle(overlay, (x, y), (x+w, y+h), color, -1)
-    return cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
+def create_eye_mask(image, landmarks, color=(0, 0, 255), thickness=30):
+    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    
+    # Get eye landmarks
+    left_eye = landmarks[36:42]
+    right_eye = landmarks[42:48]
+    
+    # Calculate eye centers
+    left_center = np.mean(left_eye, axis=0).astype(int)
+    right_center = np.mean(right_eye, axis=0).astype(int)
+    
+    # Draw line connecting eyes
+    cv2.line(mask, tuple(left_center), tuple(right_center), 255, thickness)
+    
+    # Expand mask
+    kernel = np.ones((thickness, thickness), np.uint8)
+    mask = cv2.dilate(mask, kernel, iterations=1)
+    
+    # Create colored mask
+    colored_mask = np.zeros(image.shape, dtype=np.uint8)
+    colored_mask[mask > 0] = color
+    
+    return colored_mask
 
 def process_image(image):
-    # Convert to grayscale for detection
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = detector(gray)
     
-    # Load pre-trained classifiers
-    eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
-    mouth_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_smile.xml')
-    
-    # Detect eyes and mouth
-    eyes = eye_cascade.detectMultiScale(gray, 1.3, 5)
-    mouth = mouth_cascade.detectMultiScale(gray, 1.8, 20)
-    
-    # Cover detected features
-    image = cover_features(image, eyes)
-    image = cover_features(image, mouth)
+    for face in faces:
+        landmarks = predictor(gray, face)
+        landmarks = np.array([(p.x, p.y) for p in landmarks.parts()])
+        
+        eye_mask = create_eye_mask(image, landmarks)
+        
+        # Blend the mask with the original image
+        alpha = 0.7
+        image = cv2.addWeighted(image, 1, eye_mask, alpha, 0)
     
     return image
 
 def main():
-    st.title("Face Feature Cover App")
+    st.title("Advanced Face Feature Cover App")
     
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
     
