@@ -23,20 +23,27 @@ def add_red_cloth(image):
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     
     for (x, y, w, h) in faces:
-        # Define regions for eyes and mouth
-        eye_region_height = int(h / 4)
-        mouth_region_height = int(h / 6)
-        mouth_region_width = int(w * 0.5)
+        # Fine-tune the regions for eyes and mouth
+        eye_region_height = int(h / 6)  # Height of the cloth over the eyes
+        eye_region_width = w            # Width of the cloth over the eyes
+        eye_y_offset = int(h / 5)       # Offset from the top of the face to the eyes region
         
+        mouth_region_height = int(h / 6)  # Height of the cloth over the mouth
+        mouth_region_width = int(w * 0.6) # Width of the cloth over the mouth
+        mouth_y_offset = int(2 * h / 3)   # Offset from the top of the face to the mouth region
+        mouth_x_offset = int(w / 5)       # Offset from the left and right edges for the mouth region
+
         # Cover eyes
-        eye_y_start = y + int(h / 5)
+        eye_y_start = y + eye_y_offset
         eye_y_end = eye_y_start + eye_region_height
-        image[eye_y_start:eye_y_end, x:x+w] = [0, 0, 255]
+        eye_x_start = x
+        eye_x_end = x + eye_region_width
+        image[eye_y_start:eye_y_end, eye_x_start:eye_x_end] = [0, 0, 255]
         
         # Cover mouth
-        mouth_y_start = y + int(2 * h / 3)
+        mouth_y_start = y + mouth_y_offset
         mouth_y_end = mouth_y_start + mouth_region_height
-        mouth_x_start = x + int(w / 4)
+        mouth_x_start = x + mouth_x_offset
         mouth_x_end = mouth_x_start + mouth_region_width
         image[mouth_y_start:mouth_y_end, mouth_x_start:mouth_x_end] = [0, 0, 255]
     
