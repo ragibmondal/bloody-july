@@ -4,6 +4,19 @@ import numpy as np
 from PIL import Image, ImageEnhance
 import tempfile
 
+def enhance_image(image):
+    # Convert to PIL Image
+    pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    
+    # Enhance brightness and contrast subtly
+    enhancer = ImageEnhance.Brightness(pil_image)
+    pil_image = enhancer.enhance(1.1)  # Slightly enhance brightness
+    enhancer = ImageEnhance.Contrast(pil_image)
+    pil_image = enhancer.enhance(1.1)  # Slightly enhance contrast
+    
+    # Convert back to OpenCV format
+    return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+
 def add_red_cloth(image):
     # Load the pre-trained face detector
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -14,9 +27,9 @@ def add_red_cloth(image):
     
     for (x, y, w, h) in faces:
         # Define regions for eyes and mouth with reduced size
-        eye_region_height = int(h / 4)
-        mouth_region_height = int(h / 6)
-        mouth_region_width = int(w * 0.5)  # Reduced width of the mouth region
+        eye_region_height = int(h / 8)  # Reduce height of the eye region
+        mouth_region_height = int(h / 8)  # Reduce height of the mouth region
+        mouth_region_width = int(w * 0.4)  # Reduce width of the mouth region
         
         # Cover eyes
         eye_y_start = y + int(h / 5)
@@ -26,7 +39,7 @@ def add_red_cloth(image):
         # Cover mouth
         mouth_y_start = y + int(2 * h / 3)
         mouth_y_end = mouth_y_start + mouth_region_height
-        mouth_x_start = x + int(w / 4)
+        mouth_x_start = x + int(w / 3)
         mouth_x_end = mouth_x_start + mouth_region_width
         image[mouth_y_start:mouth_y_end, mouth_x_start:mouth_x_end] = [0, 0, 255]
     
