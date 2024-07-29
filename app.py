@@ -2,94 +2,76 @@ import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
-import dlib
 import io
-import os
 
-# Load the face detector and landmark predictor
-detector = dlib.get_frontal_face_detector()
-
-# Check if the shape predictor file exists
-predictor_path = "shape_predictor_68_face_landmarks.dat"
-if not os.path.exists(predictor_path):
-    st.error(f"Error: {predictor_path} not found. Please make sure the file is in the same directory as the script.")
-    st.stop()
-
-predictor = dlib.shape_predictor(predictor_path)
-
-def load_image(image_file):
-    img = Image.open(image_file)
-    return np.array(img)
-
-def create_eye_mask(image, landmarks, color=(0, 0, 255), thickness=30):
+def apply_cloth_effect(image, eyes):
     mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    for (x, y, w, h) in eyes:
+        cv2.rectangle(mask, (x, y), (x+w, y+h), 255, -1)
     
-    # Get eye landmarks
-    left_eye = landmarks[36:42]
-    right_eye = landmarks[42:48]
+    cloth = np.full(image.shape, (0, 0, 255), dtype=np.uint8)  # Red cloth
+    cloth_area = cv2.bitwise_and(cloth, cloth, mask=mask)
     
-    # Calculate eye centers
-    left_center = np.mean(left_eye, axis=0).astype(int)
-    right_center = np.mean(right_eye, axis=0).astype(int)
+    # Add some texture to the cloth
+    noise = np.random.randint(0, 50, (cloth_area.shape[0], cloth_area.shape[1]))
+    cloth_area = cv2.add(cloth_area, noise[:, :, np.newaxis])
     
-    # Draw line connecting eyes
-    cv2.line(mask, tuple(left_center), tuple(right_center), 255, thickness)
-    
-    # Expand mask
-    kernel = np.ones((thickness, thickness), np.uint8)
-    mask = cv2.dilate(mask, kernel, iterations=1)
-    
-    # Create colored mask
-    colored_mask = np.zeros(image.shape, dtype=np.uint8)
-    colored_mask[mask > 0] = color
-    
-    return colored_mask
+    result = cv2.seamlessClone(cloth_area, image, mask, (image.shape[1]//2, image.shape[0]//2), cv2.NORMAL_CLONE)
+    return result
+
+def create_flag_background():
+    flag = np.zeros((300, 500, 3), dtype=np.uint8)
+    flag[:100] = [255, 0, 0]  # Red
+    flag[100:200] = [0, 255, 0]  # Green
+    cv2.circle(flag, (250, 150), 50, (255, 255, 255), -1)  # White circle
+    return flag
 
 def process_image(image):
+    # Convert PIL Image to OpenCV format
+    image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    
+    # Detect face and eyes
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+    
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = detector(gray)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     
-    for face in faces:
-        landmarks = predictor(gray, face)
-        landmarks = np.array([(p.x, p.y) for p in landmarks.parts()])
+    for (x, y, w, h) in faces:
+        roi_gray = gray[y:y+h, x:x+w]
+        roi_color = image[y:y+h, x:x+w]
+        eyes = eye_cascade.detectMultiScale(roi_gray)
         
-        eye_mask = create_eye_mask(image, landmarks)
-        
-        # Blend the mask with the original image
-        alpha = 0.7
-        image = cv2.addWeighted(image, 1, eye_mask, alpha, 0)
+        if len(eyes) > 0:
+            image = apply_cloth_effect(image, eyes)
     
-    return image
+    # Create flag background
+    flag = create_flag_background()
+    
+    # Resize image to fit on flag
+    height, width = flag.shape[:2]
+    image = cv2.resize(image, (width // 2, height), interpolation=cv2.INTER_AREA)
+    
+    # Overlay image on flag
+    x_offset = width // 4
+    y_offset = 0
+    flag[y_offset:y_offset+image.shape[0], x_offset:x_offset+image.shape[1]] = image
+    
+    return cv2.cvtColor(flag, cv2.COLOR_BGR2RGB)
 
 def main():
-    st.title("Advanced Face Feature Cover App")
+    st.title("Flag Portrait Creator")
+    st.write("Upload a portrait photo to create an artistic flag portrait.")
     
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
     
     if uploaded_file is not None:
-        image = load_image(uploaded_file)
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Original Image", use_column_width=True)
         
-        st.write("Original Image")
-        st.image(image, channels="BGR")
-        
-        if st.button('Process Image'):
+        if st.button("Create Flag Portrait"):
             result = process_image(image)
-            
-            st.write("Processed Image")
-            st.image(result, channels="BGR")
-            
-            # Option to download the processed image
-            result_img = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-            buf = io.BytesIO()
-            result_img.save(buf, format="PNG")
-            byte_im = buf.getvalue()
-            
-            st.download_button(
-                label="Download processed image",
-                data=byte_im,
-                file_name="processed_image.png",
-                mime="image/png"
-            )
+            st.image(result, caption="Flag Portrait", use_column_width=True)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
