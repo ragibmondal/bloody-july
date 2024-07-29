@@ -4,14 +4,14 @@ from PIL import Image
 import numpy as np
 import os
 
-# Load the Haar cascades for face, eyes, and mouth detection
-face_cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-eye_cascade_path = cv2.data.haarcascades + 'haarcascade_eye.xml'
-mouth_cascade_path = cv2.data.haarcascades + 'haarcascade_mcs_mouth.xml'
+# Define the paths to the Haar cascade XML files
+face_cascade_path = 'haarcascade_frontalface_default.xml'
+eye_cascade_path = 'haarcascade_eye.xml'
+mouth_cascade_path = 'haarcascade_mcs_mouth.xml'
 
 # Verify if the Haar cascade files exist
 if not (os.path.exists(face_cascade_path) and os.path.exists(eye_cascade_path) and os.path.exists(mouth_cascade_path)):
-    st.error("Haar cascade files are missing. Ensure OpenCV is installed properly.")
+    st.error("Haar cascade files are missing. Ensure they are in the project directory.")
 else:
     face_cascade = cv2.CascadeClassifier(face_cascade_path)
     eye_cascade = cv2.CascadeClassifier(eye_cascade_path)
