@@ -23,26 +23,21 @@ def add_red_cloth(image):
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     
     for (x, y, w, h) in faces:
-        # Define regions for eyes
-        eye_region_height = int(h / 6)
-        eye_region_width = int(w * 0.9)
-        eye_y_start = y + int(h / 5.5)
-        eye_y_end = eye_y_start + eye_region_height
-        eye_x_start = x + int(w * 0.05)
-        eye_x_end = eye_x_start + eye_region_width
-
+        # Define regions for eyes and mouth
+        eye_region_height = int(h / 4)
+        mouth_region_height = int(h / 6)
+        mouth_region_width = int(w * 0.5)
+        
         # Cover eyes
-        image[eye_y_start:eye_y_end, eye_x_start:eye_x_end] = [0, 0, 255]
-
-        # Define region for mouth
-        mouth_region_height = int(h / 7)
-        mouth_region_width = int(w * 0.6)
-        mouth_y_start = y + int(2.5 * h / 3)
-        mouth_y_end = mouth_y_start + mouth_region_height
-        mouth_x_start = x + int(w / 5)
-        mouth_x_end = mouth_x_start + mouth_region_width
-
+        eye_y_start = y + int(h / 5)
+        eye_y_end = eye_y_start + eye_region_height
+        image[eye_y_start:eye_y_end, x:x+w] = [0, 0, 255]
+        
         # Cover mouth
+        mouth_y_start = y + int(2 * h / 3)
+        mouth_y_end = mouth_y_start + mouth_region_height
+        mouth_x_start = x + int(w / 4)
+        mouth_x_end = mouth_x_start + mouth_region_width
         image[mouth_y_start:mouth_y_end, mouth_x_start:mouth_x_end] = [0, 0, 255]
     
     return image
