@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import tempfile
+import matplotlib.font_manager as fm
 
 def load_face_cascade():
     face_cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
@@ -42,19 +43,15 @@ def add_red_cloth(image):
 
 def add_text_background(image, text="BLOODY JULY"):
     # Define text properties
+    font_path = fm.findSystemFonts(fontpaths=None, fontext='ttf')[0]
     font = cv2.FONT_HERSHEY_SIMPLEX
-    bottom_left_corner_of_text = (10, image.shape[0] - 10)
-    font_scale = 3
-    font_color = (0, 0, 255)
+    org = (50, 100)  # Position the text beside the head
+    font_scale = 2
+    font_color = (0, 0, 255)  # Red color
     line_type = 2
-    
-    # Add text to the image
-    cv2.putText(image, text, 
-                bottom_left_corner_of_text, 
-                font, 
-                font_scale, 
-                font_color, 
-                line_type)
+
+    # Create the text with a custom effect (simulating bloody text)
+    cv2.putText(image, text, org, font, font_scale, font_color, line_type, cv2.LINE_AA)
     
     return image
 
