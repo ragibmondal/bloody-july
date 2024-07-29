@@ -4,14 +4,6 @@ import numpy as np
 from PIL import Image, ImageEnhance
 import tempfile
 
-def enhance_image(image):
-    # Convert to PIL Image
-    pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-
-    
-    # Convert back to OpenCV format
-    return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-
 def add_red_cloth(image):
     # Load the pre-trained face detector
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
