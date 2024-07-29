@@ -17,10 +17,18 @@ def convert_image(image):
     # Loop through detected faces
     for (x, y, w, h) in faces:
         # Draw red rectangle around mouth
-        cv2.rectangle(img, (x, y + h // 2), (x + w, y + h), (0, 0, 255), 2)
+        mouth_x = x + w // 4
+        mouth_y = y + h // 2
+        mouth_w = w - w // 2
+        mouth_h = h // 4
+        cv2.rectangle(img, (mouth_x, mouth_y), (mouth_x + mouth_w, mouth_y + mouth_h), (0, 0, 255), -1)
 
         # Draw red rectangle around eyes
-        cv2.rectangle(img, (x + w // 4, y + h // 4), (x + w - w // 4, y + h // 2), (0, 0, 255), 2)
+        eye_x = x + w // 4
+        eye_y = y + h // 4
+        eye_w = w - w // 2
+        eye_h = h // 4
+        cv2.rectangle(img, (eye_x, eye_y), (eye_x + eye_w, eye_y + eye_h), (0, 0, 255), -1)
 
     # Return the converted image
     return cv2.imencode('.jpg', img)[1].tobytes()
