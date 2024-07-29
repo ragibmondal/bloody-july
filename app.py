@@ -1,85 +1,82 @@
 import streamlit as st
-import cv2
+from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
-from PIL import Image
-import tempfile
+import io
 
-def apply_cloth_effect(image, mask, color=(0, 0, 255), alpha=0.7):
-    cloth = np.zeros(image.shape, dtype=np.uint8)
-    cloth[:] = color
+def apply_cloth_effect(img, mask, color=(255, 0, 0), alpha=0.7):
+    # Create a new image for the cloth
+    cloth = Image.new('RGB', img.size, color)
     
-    # Add texture to the cloth
-    noise = np.random.randint(0, 50, image.shape, dtype=np.uint8)
-    cloth = cv2.add(cloth, noise)
+    # Add some texture to the cloth
+    cloth_array = np.array(cloth)
+    noise = np.random.randint(0, 50, cloth_array.shape, dtype=np.uint8)
+    cloth = Image.fromarray(cv2.add(cloth_array, noise))
     
     # Apply the mask
-    cloth_masked = cv2.bitwise_and(cloth, cloth, mask=mask)
+    cloth.putalpha(Image.fromarray(mask).convert('L'))
     
     # Blend the cloth with the original image
-    result = cv2.addWeighted(image, 1 - alpha, cloth_masked, alpha, 0)
+    result = Image.blend(img, cloth, alpha)
     
     # Add shadow effect
-    shadow = cv2.GaussianBlur(mask, (5, 5), 0)
-    shadow = cv2.merge([shadow, shadow, shadow])
-    result = cv2.subtract(result, shadow * 0.5)
+    shadow = Image.fromarray(mask).convert('L').filter(ImageFilter.GaussianBlur(5))
+    shadow = Image.merge('RGB', [shadow, shadow, shadow])
+    result = Image.blend(result, shadow.convert('RGB'), 0.3)
     
     return result
 
-def add_red_cloth(image):
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+def add_red_cloth(img):
+    draw = ImageDraw.Draw(img)
+    width, height = img.size
     
-    for (x, y, w, h) in faces:
-        # Create masks for eyes and mouth
-        eye_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        mouth_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        
-        # Eye region
-        eye_y = y + int(h * 0.2)
-        eye_h = int(h * 0.15)
-        cv2.rectangle(eye_mask, (x, eye_y), (x + w, eye_y + eye_h), 255, -1)
-        
-        # Mouth region
-        mouth_y = y + int(h * 0.65)
-        mouth_h = int(h * 0.2)
-        cv2.rectangle(mouth_mask, (x, mouth_y), (x + w, mouth_y + mouth_h), 255, -1)
-        
-        # Apply cloth effect
-        image = apply_cloth_effect(image, eye_mask)
-        image = apply_cloth_effect(image, mouth_mask)
+    # Eye region
+    eye_y = int(height * 0.2)
+    eye_h = int(height * 0.15)
+    eye_mask = Image.new('L', img.size, 0)
+    ImageDraw.Draw(eye_mask).rectangle([0, eye_y, width, eye_y + eye_h], fill=255)
     
-    return image
+    # Mouth region
+    mouth_y = int(height * 0.65)
+    mouth_h = int(height * 0.2)
+    mouth_mask = Image.new('L', img.size, 0)
+    ImageDraw.Draw(mouth_mask).rectangle([0, mouth_y, width, mouth_y + mouth_h], fill=255)
+    
+    # Apply cloth effect
+    img = apply_cloth_effect(img, np.array(eye_mask))
+    img = apply_cloth_effect(img, np.array(mouth_mask))
+    
+    return img
 
 def process_image(image):
     return add_red_cloth(image)
 
 def main():
-    st.title("Advanced Image Processing App")
+    st.title("Deployment-Friendly Image Processing App")
     st.write("Upload an image to add realistic red cloth over eyes and mouth.")
 
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
-        image = cv2.imdecode(np.frombuffer(uploaded_file.read(), np.uint8), 1)
+        image = Image.open(uploaded_file).convert('RGB')
         processed_image = process_image(image.copy())
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Original Image")
-            st.image(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            st.image(image)
         with col2:
             st.subheader("Processed Image")
-            st.image(cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB))
+            st.image(processed_image)
 
-        is_success, buffer = cv2.imencode(".png", processed_image)
-        if is_success:
-            btn = st.download_button(
-                label="Download processed image",
-                data=buffer.tobytes(),
-                file_name="processed_image.png",
-                mime="image/png"
-            )
+        # Provide download option for the processed image
+        buf = io.BytesIO()
+        processed_image.save(buf, format="PNG")
+        btn = st.download_button(
+            label="Download processed image",
+            data=buf.getvalue(),
+            file_name="processed_image.png",
+            mime="image/png"
+        )
 
 if __name__ == "__main__":
     main()
