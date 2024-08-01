@@ -12,54 +12,41 @@ def load_face_cascade():
         return None
     return face_cascade
 
-def add_transparent_red_cloth(image):
+def add_red_band(image):
     face_cascade = load_face_cascade()
     if face_cascade is None:
         return image
     
-    # Convert to RGBA
-    image_rgba = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
-    
+    # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Convert grayscale to BGR for colored overlay
+    image_gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     
-    overlay = np.zeros_like(image_rgba)
-    
     for (x, y, w, h) in faces:
-        eye_region_height = int(h / 4)
-        mouth_region_height = int(h / 6)
-        mouth_region_width = int(w * 0.5)
+        eye_y = y + int(h * 0.25)  # Adjust this value to position the band
+        band_height = int(h * 0.1)  # Adjust for desired band thickness
         
-        eye_y_start = y + int(h / 5)
-        eye_y_end = eye_y_start + eye_region_height
-        overlay[eye_y_start:eye_y_end, x:x+w] = [255, 0, 0, 128]  # Semi-transparent red
-        
-        mouth_y_start = y + int(2 * h / 3)
-        mouth_y_end = mouth_y_start + mouth_region_height
-        mouth_x_start = x + int(w / 4)
-        mouth_x_end = mouth_x_start + mouth_region_width
-        overlay[mouth_y_start:mouth_y_end, mouth_x_start:mouth_x_end] = [255, 0, 0, 128]  # Semi-transparent red
+        # Draw red band
+        cv2.rectangle(image_gray, (x, eye_y), (x + w, eye_y + band_height), (0, 0, 255), -1)
     
-    # Blend the overlay with the original image
-    result = cv2.addWeighted(image_rgba, 1, overlay, 0.5, 0)
-    
-    return result
+    return image_gray
 
 def process_image(image):
-    final_image = add_transparent_red_cloth(image)
+    final_image = add_red_band(image)
     return final_image
 
 def main():
     st.title("Image Processing App")
-    st.write("Upload an image to add transparent red cloth over eyes and mouth.")
+    st.write("Upload an image to add a red band across the eyes.")
     
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
     
     if uploaded_file is not None:
         try:
             original_image = np.array(Image.open(uploaded_file).convert('RGB'))
-            image_for_processing = original_image.copy()
-            image_for_processing = cv2.cvtColor(image_for_processing, cv2.COLOR_RGB2BGR)
+            image_for_processing = cv2.cvtColor(original_image, cv2.COLOR_RGB2BGR)
             
             processed_image = process_image(image_for_processing)
             
@@ -69,9 +56,9 @@ def main():
                 st.image(original_image, channels="RGB")
             with col2:
                 st.subheader("Processed Image")
-                st.image(processed_image, channels="RGBA")
+                st.image(cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB))
             
-            processed_pil_image = Image.fromarray(processed_image)
+            processed_pil_image = Image.fromarray(cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB))
             with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
                 processed_pil_image.save(tmpfile.name, format="PNG")
                 st.download_button(
